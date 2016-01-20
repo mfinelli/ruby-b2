@@ -47,5 +47,26 @@ module B2
 
       account
     end
+
+    def buckets
+      unless @api_url.nil? || @authorization_token.nil?
+        uri = URI("#{@api_url}/b2api/v1/b2_list_buckets")
+        req = Net::HTTP::Post.new(uri)
+        req.add_field('Authorization', @authorization_token)
+        req.body = JSON.generate({accountId: @account_id})
+        http = Net::HTTP::new(req.uri.host, req.uri.port)
+        http.use_ssl = true
+        res = http.start{|http| http.request(req)}
+
+        case res
+        when Net::HTTPSuccess
+          JSON.parse(res.body)
+        when Net::HTTPRedirection
+          fetch(res['location'], limit - 1)
+        else
+          res.error!
+        end
+      end
+    end
   end
 end
